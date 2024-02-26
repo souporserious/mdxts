@@ -66,7 +66,7 @@ export async function CodeInline({
       ? languageMap[language]
       : language) || 'plaintext'
   const highlighter = await getHighlighter()
-  const tokens = highlighter(finalValue, finalLanguage)
+  const tokens = await highlighter(finalValue, finalLanguage)
   const editorForegroundColor = theme.colors['editor.foreground'].toLowerCase()
 
   return (

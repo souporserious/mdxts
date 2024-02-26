@@ -1,4 +1,4 @@
-import React, { Fragment } from 'react'
+import React, { Fragment, use } from 'react'
 import { type ts, type Diagnostic } from 'ts-morph'
 import { getDiagnosticMessageText } from '@tsxmod/utils'
 
@@ -21,7 +21,7 @@ export function QuickInfo({
 }: {
   position: number
   filename: string
-  highlighter: Awaited<ReturnType<typeof getHighlighter>>
+  highlighter: any
   language: string
   theme: any
   diagnostics: Diagnostic[]
@@ -46,7 +46,7 @@ export function QuickInfo({
     .replaceAll(baseDirectory, '')
     // Finally, replace the in-memory mdxts directory
     .replaceAll('/mdxts', '')
-  const displayTextTokens = highlighter(displayText, language)
+  const displayTextTokens = use(highlighter(displayText, language)) as any[]
   const documentation = quickInfo.documentation || []
   const documentationText = formatDocumentationText(documentation)
 
@@ -100,7 +100,7 @@ export function QuickInfo({
             </>
           ) : null}
           <div style={{ whiteSpace: 'pre-wrap', padding: '0.25rem 0.5rem' }}>
-            {displayTextTokens.map((line, index) => (
+            {displayTextTokens.map((line: any[], index) => (
               <Fragment key={index}>
                 {index === 0 ? null : '\n'}
                 {line.map((token, index) => (

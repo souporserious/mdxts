@@ -164,18 +164,22 @@ export function Editor({
     )
     setSourceFile(nextSourceFile)
 
-    if (isJavaScriptBasedLanguage) {
-      const diagnostics = nextSourceFile.getPreEmitDiagnostics()
-      setDiagnostics(diagnostics)
+    async function init() {
+      if (isJavaScriptBasedLanguage) {
+        const diagnostics = nextSourceFile.getPreEmitDiagnostics()
+        setDiagnostics(diagnostics)
 
-      if (highlighter && resolvedValue && sourceFile) {
-        const tokens = highlighter(resolvedValue, language, sourceFile)
+        if (highlighter && resolvedValue && sourceFile) {
+          const tokens = await highlighter(resolvedValue, language, sourceFile)
+          setTokens(tokens)
+        }
+      } else if (highlighter && resolvedValue) {
+        const tokens = await highlighter(resolvedValue, language)
         setTokens(tokens)
       }
-    } else if (highlighter && resolvedValue) {
-      const tokens = highlighter(resolvedValue, language)
-      setTokens(tokens)
     }
+
+    init()
   }, [resolvedValue, highlighter])
 
   useEffect(() => {

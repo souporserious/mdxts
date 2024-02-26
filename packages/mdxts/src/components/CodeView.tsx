@@ -90,7 +90,7 @@ export function CodeView({
 }: CodeProps & {
   filenameLabel?: string
   row?: number[] | null
-  tokens: ReturnType<Awaited<ReturnType<typeof getHighlighter>>>
+  tokens: any[]
   sourceFile?: SourceFile
   sourcePath?: string
   highlighter: any
@@ -210,7 +210,7 @@ export function CodeView({
               overflow: 'auto',
             }}
           >
-            {tokens.map((line, lineIndex) => (
+            {tokens.map((line: any[], lineIndex) => (
               <Fragment key={lineIndex}>
                 {line.map((token, tokenIndex) => {
                   const isForegroundColor = token.color

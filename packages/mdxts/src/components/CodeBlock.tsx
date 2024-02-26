@@ -220,7 +220,12 @@ export async function CodeBlock({
   }
 
   const highlighter = await getHighlighter()
-  const tokens = highlighter(finalValue, finalLanguage, sourceFile, jsxOnly)
+  const tokens = await highlighter(
+    finalValue,
+    finalLanguage,
+    sourceFile,
+    jsxOnly
+  )
   const rootDirectory = (await findRoot(process.cwd())).rootDir
   const baseDirectory = process.cwd().replace(rootDirectory, '')
   const filenameLabel = filename

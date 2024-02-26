@@ -1,11 +1,11 @@
 import { cache } from 'react'
-import { getHighlighter as shikiGetHighlighter } from 'shiki'
 import type { SourceFile } from 'ts-morph'
 import { Node, SyntaxKind } from 'ts-morph'
 
 import { getContext } from '../utils/context'
 import { getTheme } from '../index'
 import { Context } from './Context'
+import { createHighlighter } from './create-highlighter'
 
 type Color = string
 
@@ -44,7 +44,7 @@ export type Highlighter = (
   language: any,
   sourceFile?: SourceFile,
   isJsxOnly?: boolean
-) => Tokens[]
+) => Promise<Tokens[]>
 
 const FontStyle = {
   Italic: 1,
@@ -70,7 +70,7 @@ function getFontStyle(fontStyle: number): any {
   return style
 }
 
-let highlighter: Awaited<ReturnType<typeof shikiGetHighlighter>> | null = null
+let highlighter: ReturnType<typeof createHighlighter> | null = null
 
 /** Returns a function that converts code to an array of highlighted tokens */
 export const getHighlighter = cache(async function getHighlighter(
@@ -83,16 +83,21 @@ export const getHighlighter = cache(async function getHighlighter(
       options = { theme }
     }
 
-    highlighter = await shikiGetHighlighter(options)
+    highlighter = createHighlighter()
   }
 
-  return function (
+  return async function (
     value: string,
     language: any,
     sourceFile?: SourceFile,
     isJsxOnly: boolean = false
   ) {
-    if (language === 'plaintext') {
+    if (
+      language === 'plaintext' ||
+      language === 'mdx' ||
+      language === 'shellscript' ||
+      language === 'sh'
+    ) {
       return [
         [
           {
@@ -106,12 +111,25 @@ export const getHighlighter = cache(async function getHighlighter(
     }
 
     const code = sourceFile ? sourceFile.getFullText() : value
-    const tokens = highlighter!
-      .codeToThemedTokens(code, language, undefined, {
-        includeExplanation: false,
-      })
+    const lineTokens = await highlighter!.highlightToAbstract(
+      {
+        code,
+        grammar: `source.${language}` as any,
+        theme: 'github-dark',
+      },
+      (tokens) => tokens
+    )
+    const tokens = lineTokens
+      .map((line) =>
+        line.map((token) => ({
+          color: token.color,
+          content: token.value,
+          fontStyle: token.fontStyle,
+        }))
+      )
       .filter((line) => {
         // filter out imports when jsx only source file
+        // TODO: this can break if import is multiline
         if (isJsxOnly) {
           return !line.some((token) => token.content === 'import')
         }
@@ -160,7 +178,7 @@ export const getHighlighter = cache(async function getHighlighter(
         const initialToken = {
           color: token.color,
           content: token.content,
-          fontStyle: getFontStyle(token.fontStyle as number),
+          fontStyle: getFontStyle(parseInt(token.fontStyle)),
           start: tokenStart,
           end: tokenEnd,
         }
