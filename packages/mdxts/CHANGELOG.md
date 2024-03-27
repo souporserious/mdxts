@@ -1,5 +1,11 @@
 # mdxts
 
+## 0.12.1
+
+### Patch Changes
+
+- f35df99: Fixes the `getGitMetadata` utility erroring when running MDXTS in a project that does not have git instantiated.
+
 ## 0.12.0
 
 ### Minor Changes
