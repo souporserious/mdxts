@@ -1,10 +1,11 @@
 import parseTitle from 'title'
 import * as React from 'react'
 import type { ComponentType } from 'react'
-import { basename, dirname, extname, join, posix } from 'node:path'
+import { basename, dirname, extname, join, posix, resolve } from 'node:path'
 import { Feed } from 'feed'
 import { Project } from 'ts-morph'
 import { getDiagnosticMessageText } from '@tsxmod/utils'
+import globParent from 'glob-parent'
 import 'server-only'
 
 import { project } from './components/project'
@@ -123,7 +124,8 @@ export type CreateSourceResult<
 
   /** Retrieves a module by its pathname, optionally including metadata, examples, and previous/next navigation links. */
   get: (
-    pathname?: GlobPattern extends RecursiveGlobPattern ? string[] : string
+    pathname?: GlobPattern extends RecursiveGlobPattern ? string[] : string,
+    getModule?: (slug: string) => Promise<any>
   ) => Promise<Module<Type> | undefined>
 
   /**
@@ -150,6 +152,8 @@ export function createSource<
   globPattern: GlobPattern,
   options: CreateSourceOptions<Type> = {}
 ): CreateSourceResult<Type, GlobPattern> {
+  const baseFilePattern = globParent(globPattern)
+  const baseFilePath = resolve(baseFilePattern)
   let allModules = arguments[2] as AllModules
 
   if (allModules === undefined) {
@@ -327,7 +331,8 @@ export function createSource<
     },
 
     async get(
-      pathname: string | string[] | undefined
+      pathname: string | string[] | undefined,
+      getModule?: (slug: string) => Promise<any>
     ): Promise<Module<Type> | undefined> {
       if (pathname === undefined) {
         pathname = basePathname
@@ -358,6 +363,13 @@ export function createSource<
         return
       }
 
+      const normalizedSlug = (data.mdxPath || data.tsPath)!
+      const slug = normalizedSlug
+        .replace(baseFilePath, '')
+        // remove extension
+        .replace(/\.[^/.]+$/, '')
+        // remove leading separator
+        .replace(/^\//, '')
       let {
         default: Content,
         headings = [],
@@ -365,14 +377,16 @@ export function createSource<
         metadata = {},
         readingTime,
         ...moduleExports
-      } = data.mdxPath
-        ? await allModules[data.mdxPath].call(null)
-        : {
-            default: undefined,
-            description: undefined,
-            metadata: undefined,
-            readingTime: undefined,
-          }
+      } = getModule
+        ? await getModule?.call(null, slug)
+        : data.mdxPath
+          ? await allModules[data.mdxPath].call(null)
+          : {
+              default: undefined,
+              description: undefined,
+              metadata: undefined,
+              readingTime: undefined,
+            }
 
       /** Append example links to headings data. */
       const examples = await data.examples
@@ -534,7 +548,10 @@ export function mergeSources<
     )
   }
 
-  async function get(pathname: string | string[] | undefined) {
+  async function get(
+    pathname: string | string[] | undefined,
+    getModule?: (slug: string) => Promise<any>
+  ) {
     let result
 
     if (!pathname) {
@@ -542,7 +559,7 @@ export function mergeSources<
     }
 
     for (const dataSource of sources) {
-      result = await dataSource.get(pathname as any)
+      result = await dataSource.get(pathname as any, getModule)
       if (result) break
     }
 

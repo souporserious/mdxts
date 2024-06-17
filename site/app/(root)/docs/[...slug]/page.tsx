@@ -33,7 +33,10 @@ export async function generateMetadata({
 }
 
 export default async function Page({ params }: { params: { slug: string[] } }) {
-  const doc = await allData.get(['docs', ...params.slug])
+  const doc = await allData.get(
+    ['docs', ...params.slug],
+    (slug) => import(`docs/${slug}.mdx`)
+  )
 
   if (!doc) {
     return notFound()
