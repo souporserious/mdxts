@@ -1,5 +1,17 @@
 # mdxts
 
+## 1.5.1
+
+### Patch Changes
+
+- 22a4617: Improves error messages for `CodeBlock` type errors to show exactly where each diagnostic occurs.
+- 6095e9d: Loads proper lib declarations for in memory file system when type checking front matter.
+- abaa320: Fix pathname generation in case the `baseDirectory` exists multiple times in the `filePath`.
+
+  Previously having a file path like `content/content_1/path/file.mdx` and using `content` as base directory results in an invalid pathname like `content-1path/file`.
+
+  Now we get the correct path name like `/content-1/path/file`.
+
 ## 1.5.0
 
 ### Minor Changes
